@@ -1,46 +1,39 @@
 #!/bin/bash
-# install-protect.sh - Installer SANZY PROTECT
-
-echo "🛡️ MEMULAI INSTALASI SANZY PROTECT..."
+echo "🛡️ INSTALLING SANZY PROTECT..."
 
 cd /var/www/pterodactyl || exit 1
 
-# Backup panel
-echo "📦 Backup panel..."
+# Backup
 cp -r /var/www/pterodactyl /root/panel-backup-$(date +%Y%m%d-%H%M%S)
-
-# Mode maintenance
 php artisan down
 
-# ========== DOWNLOAD MIDDLEWARE ==========
+# Download middleware ke folder yang benar
 mkdir -p app/Http/Middleware
-curl -o app/Http/Middleware/SanzyProtect.php https://raw.githubusercontent.com/Sanzyoffc-ganteng/installertema/main/SanzyProtect.php
+curl -o app/Http/Middleware/SanoProtect.php https://raw.githubusercontent.com/Sanzyoffc-ganteng/installertema/main/SanoProtect.php
 
-# ========== REGISTER KE KERNEL ==========
-if ! grep -q "SanzyProtect" app/Http/Kernel.php; then
-    sed -i "/'api' => \[/a \\        \\Pterodactyl\\Http\\Middleware\\SanzyProtect::class," app/Http/Kernel.php
+# Register ke Kernel.php
+if ! grep -q "SanoProtect" app/Http/Kernel.php; then
+    sed -i "/'api' => \[/a \\        \\Pterodactyl\\Http\\Middleware\\SanoProtect::class," app/Http/Kernel.php
 fi
 
-# ========== BUAT WHITELIST ==========
+# Buat whitelist
 mkdir -p storage
 echo '{"admins":[1]}' > storage/sanzy_whitelist.json
 
-# ========== TAMBAHKAN ROUTE ==========
+# Tambah route
 if ! grep -q "admin/sanzy-protect" routes/web.php; then
     echo "Route::get('/admin/sanzy-protect', fn() => view('errors.403', ['message' => '🛡️ SANZY PROTECT - 9 Level Security Active']))->name('admin.sanzy-protect');" >> routes/web.php
 fi
 
-# ========== REFRESH ==========
+# Refresh
 composer dump-autoload
 php artisan optimize:clear
 
-# ========== PERMISSION ==========
+# Permission
 chown -R www-data:www-data app/Http/Middleware storage/sanzy_whitelist.json
 
-# ========== NYALAKAN PANEL ==========
+# Nyalakan panel
 php artisan up
 systemctl restart nginx php8.1-fpm pteroq 2>/dev/null || systemctl restart nginx php8.2-fpm pteroq 2>/dev/null
 
 echo "✅ SANZY PROTECT BERHASIL DIPASANG!"
-echo "🛡️ 9 Level Security Active!"
-echo "🛡️ Menu 'SANZY PROTECT' warna merah sudah muncul di sidebar!"
